@@ -140,16 +140,7 @@ const pasteSolutionInAccount = async (page) => {
                 await page.keyboard.press('V')
                 await page.keyboard.up('Control')
 
-                // for (let t of solutions[taskName].split("\n")) {
-                //     for (let u of t) {
-                //         if (t == " ") {
-                //             await page.keyboard.press('Backspace');
-                //         }
-                //     }
-                //     await page.keyboard.type(t);
-                //     await page.keyboard.press("Enter");
-                //     await page.waitFor(1000);
-                // }
+                await page.click(".layout__main .Button2_view_lyceum");
 
                 await page.waitFor(6000);
 
