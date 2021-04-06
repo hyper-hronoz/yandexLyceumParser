@@ -1,0 +1,17 @@
+{
+  "name": "yandex_lyceum_parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "*",
+    "puppeteer": "^8.0.0",
+    "puppeteer-core": "^8.0.0"
+  }
+}
