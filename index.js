@@ -2,8 +2,6 @@ const puppeteer = require("puppeteer");
 const url = require('url');
 const fs = require("fs");
 const $ = require('cheerio');
-const cookies = require("./cookies.json");
-const solutions = require("./solutions.json");
 const clipboardy = require('clipboardy');
 
 
@@ -15,57 +13,40 @@ const start = async () => {
         headless: false
     });
 
-    const page = await browser.newPage();
+    const newPage = async () => {
+        const solutions = require("./solutions.json");
 
-    if (!Object.keys(solutions).length) {
-        if (Object.keys(cookies).length) {
+        const page = await browser.newPage();
 
+        if (!Object.keys(solutions).length) {
             console.log("Hello начинаем копирования заданий на ваше устройство");
 
-            await page.setCookie(...cookies);
-
-            await page.goto("https://lyceum.yandex.ru/", { waitUntil: "networkidle2" });
+            await login(page, "tanka.bocharova.23@gmail.com", "NoviyOrlean53281TB7");
 
             await copySolutions(page);
 
-            await start();
+            await page.close();
+
+            await newPage();
 
         } else {
-            await login(page, "tanka.bocharova.23@gmail.com", "NoviyOrlean53281TB7");
 
-            await browser.close();
-
-            await start();
-        }
-
-        await logout();
-    } else {
-        // console.log("Входим в акк с решениями");
-
-        if (Object.keys(cookies).length) {
-            
-            // console.log("авторизовались в аке с решениями");
-
-            await page.setCookie(...cookies);
-
-            await page.goto("https://lyceum.yandex.ru/", { waitUntil: "networkidle2" });
-
-            await pasteSolutionInAccount(page);
-        } else {
-            // console.log("авторизируемся в аке с решениями");
-            
             await login(page, "Hronologos227", "cktdfujhs");
 
-            await start();
+            await pasteSolutionInAccount(page);
+
+            await page.close();
         }
-
-
-        await logout();
     }
+
+    await newPage();
+
     await browser.close();
-};
+}
+
 
 const pasteSolutionInAccount = async (page) => {
+    await page.waitForSelector('a.course-card');
 
     const links = await page.evaluate(() =>
         Array.from(
@@ -75,7 +56,9 @@ const pasteSolutionInAccount = async (page) => {
         )
     )
 
-    await page.goto(links[2], { waitUntil: "networkidle0" });
+    await page.goto(links[2], {
+        waitUntil: "networkidle0"
+    });
 
     const lessonLinks = await page.evaluate(() =>
         Array.from(
@@ -87,7 +70,9 @@ const pasteSolutionInAccount = async (page) => {
 
     for (let k of lessonLinks) {
         console.log(k);
-        await page.goto(k, { waitUntil: "networkidle0" });
+        await page.goto(k, {
+            waitUntil: "networkidle0"
+        });
         const taskLinks = await page.evaluate(() =>
             Array.from(
                 document.querySelectorAll('a.student-task-list__task'), (element) => {
@@ -97,7 +82,9 @@ const pasteSolutionInAccount = async (page) => {
         )
 
         for (let i of taskLinks) {
-            await page.goto(i, { waitUntil: "networkidle2" });
+            await page.goto(i, {
+                waitUntil: "networkidle2"
+            });
 
             if (!page.url().includes("solutions")) {
                 console.log("not solutions works");
@@ -113,7 +100,9 @@ const pasteSolutionInAccount = async (page) => {
 
                 console.log(solutionPage[0]);
 
-                await page.goto(solutionPage[0], { waitUntil: "networkidle0" });
+                await page.goto(solutionPage[0], {
+                    waitUntil: "networkidle0"
+                });
 
                 // const taskSolution = await page.evaluate(() => {
                 //     return document.querySelector('.CodeMirror-line > span')
@@ -142,8 +131,6 @@ const pasteSolutionInAccount = async (page) => {
 
                 await page.click(".layout__main .Button2_view_lyceum");
 
-                await page.waitFor(6000);
-
             } else {
                 console.log("мы наткнулись на не пусторе решение");
             }
@@ -155,26 +142,28 @@ const pasteSolutionInAccount = async (page) => {
 }
 
 const login = async (page, login, password) => {
-    await page.goto("https://passport.yandex.ru/auth?origin=lyceum&retpath=https%3A%2F%2Flyceum.yandex.ru%2F", { waitUntil: "networkidle0" })
+    await page.goto("https://passport.yandex.ru/auth?origin=lyceum&retpath=https%3A%2F%2Flyceum.yandex.ru%2F", {
+        waitUntil: "networkidle0"
+    })
 
-    await page.type("#passp-field-login", login, { delay: 30 });
+    await page.type("#passp-field-login", login, {
+        delay: 30
+    });
 
     await page.click(".Button2_type_submit");
 
     await page.waitFor(1000);
 
-    await page.type("#passp-field-passwd", password, { delay: 30 });
+    await page.type("#passp-field-passwd", password, {
+        delay: 30
+    });
 
     await page.click(".Button2_type_submit");
-
-    await page.waitFor(15000);
-
-    let currentCookies = await page.cookies();
-
-    fs.writeFileSync("./cookies.json", JSON.stringify(currentCookies));
 }
 
 const copySolutions = async (page) => {
+    await page.waitForSelector('a.course-card');
+
     const links = await page.evaluate(() =>
         Array.from(
             document.querySelectorAll('a.course-card'), (element) => {
@@ -183,7 +172,9 @@ const copySolutions = async (page) => {
         )
     )
 
-    await page.goto(links[1], { waitUntil: "networkidle0" });
+    await page.goto(links[1], {
+        waitUntil: "networkidle0"
+    });
 
     const lessonLinks = await page.evaluate(() =>
         Array.from(
@@ -197,7 +188,9 @@ const copySolutions = async (page) => {
 
     for (let k of lessonLinks) {
         console.log(k);
-        await page.goto(k, { waitUntil: "networkidle0" });
+        await page.goto(k, {
+            waitUntil: "networkidle0"
+        });
         const taskLinks = await page.evaluate(() =>
             Array.from(
                 document.querySelectorAll('a.student-task-list__task'), (element) => {
@@ -207,7 +200,9 @@ const copySolutions = async (page) => {
         )
 
         for (let i of taskLinks) {
-            await page.goto(i, { waitUntil: "networkidle2" });
+            await page.goto(i, {
+                waitUntil: "networkidle2"
+            });
 
             if (page.url().includes("solutions")) {
                 console.log("works");
@@ -243,10 +238,6 @@ const copySolutions = async (page) => {
             }
         }
     }
-}
-
-const logout = async () => {
-    fs.writeFileSync("./cookies.json", JSON.stringify({}));
 }
 
 start();
