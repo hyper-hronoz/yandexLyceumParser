@@ -21,8 +21,6 @@ const start = async () => {
         if (!Object.keys(solutions).length) {
             console.log("Hello начинаем копирования заданий на ваше устройство");
 
-            await login(page, "tanka.bocharova.23@gmail.com", "NoviyOrlean53281TB7");
-
             await copySolutions(page);
 
             await page.close();
@@ -121,7 +119,11 @@ const pasteSolutionInAccount = async (page) => {
                     console.log(e);
                 }
 
-                await clipboardy.write(solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, ''));
+                try {
+                    await clipboardy.write(solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, ''));
+                } catch(e) {
+
+                }
 
                 await page.click('.CodeMirror-lines');
 
@@ -163,7 +165,6 @@ const login = async (page, login, password) => {
 
 const copySolutions = async (page) => {
     await page.waitForSelector('a.course-card');
-
     const links = await page.evaluate(() =>
         Array.from(
             document.querySelectorAll('a.course-card'), (element) => {
