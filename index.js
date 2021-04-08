@@ -28,7 +28,9 @@ const start = async () => {
 
         } else {
 
-            await login(page, reader.question("login: "), reader.question("password: ")); 
+            // await formateCode(browser);
+
+            await login(page, reader.question("login: "), reader.question("password: "));
 
             await pasteSolutionInAccount(page, solutions, browser);
 
@@ -69,75 +71,85 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
     )
 
     for (let k of lessonLinks) {
-        console.log(k);
-        await page.goto(k, {
-            waitUntil: "networkidle0"
-        });
-        const taskLinks = await page.evaluate(() =>
-            Array.from(
-                document.querySelectorAll('a.student-task-list__task'), (element) => {
-                    return "https://lyceum.yandex.ru" + element.getAttribute("href");
-                }
-            )
-        )
-
-        for (let i of taskLinks) {
-            await page.goto(i, {
+        if (!k.includes("null")) {
+            console.log(k);
+            await page.goto(k, {
                 waitUntil: "networkidle0"
             });
-
-            if (!page.url().includes("solutions")) {
-                console.log("not solutions works");
-
-
-                const solutionPage = await page.evaluate(() =>
-                    Array.from(
-                        document.querySelectorAll('a.Button2_view_lyceum'), (element) => {
-                            return "https://lyceum.yandex.ru" + element.getAttribute("href");
-                        }
-                    )
+            const taskLinks = await page.evaluate(() =>
+                Array.from(
+                    document.querySelectorAll('a.student-task-list__task'), (element) => {
+                        return "https://lyceum.yandex.ru" + element.getAttribute("href");
+                    }
                 )
+            )
 
-                console.log(solutionPage[0]);
-
-                await page.goto(solutionPage[0], {
+            for (let i of taskLinks) {
+                await page.goto(i, {
                     waitUntil: "networkidle0"
                 });
 
-                const taskName = await page.evaluate(() => {
-                    return document.querySelector('h1').innerText
-                })
+                if (!page.url().includes("solutions")) {
+                    console.log("not solutions works");
 
-                await page.click(".code-editor__control-button");
 
-                try {
-                    console.log(taskName, solutions[taskName]);
-                    if (solutions[taskName]) {
-                        let finalTaskSolution = solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, '')
+                    const solutionPage = await page.evaluate(() =>
+                        Array.from(
+                            document.querySelectorAll('a.Button2_view_lyceum'), (element) => {
+                                return "https://lyceum.yandex.ru" + element.getAttribute("href");
+                            }
+                        )
+                    )
 
-                        await obfuscate(browser, finalTaskSolution);
+                    console.log(solutionPage[0]);
 
-                        // await clipboardy.write(finalTaskSolution);
+                    if (!solutionPage[0].includes("null")) {
+                        await page.goto(solutionPage[0], {
+                            waitUntil: "networkidle0"
+                        });
 
-                        await page.click('.CodeMirror-lines');
+                        const taskName = await page.evaluate(() => {
+                            return document.querySelector('h1').innerText
+                        })
 
-                        await page.keyboard.down('Control')
+                        await page.click(".code-editor__control-button");
 
-                        await page.keyboard.press('V')
+                        try {
+                            console.log(taskName, solutions[taskName]);
+                            if (solutions[taskName]) {
+                                let finalTaskSolution = solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, '')
 
-                        await page.keyboard.up('Control')
+                                await clipboardy.write(finalTaskSolution);
 
-                        await page.click(".layout__main .Button2_view_lyceum");
+                                await obfuscate(browser);
+
+                                await formateCode(browser)
+
+                                await page.click('.CodeMirror-lines');
+
+                                await page.keyboard.down('Control')
+
+                                await page.keyboard.press('v')
+
+                                await page.keyboard.up('Control')
+
+                                await page.waitFor(3000)
+
+                                await page.click(".layout__main .Button2_view_lyceum");
+                            }
+                        } catch (e) {
+                            console.log(solutions);
+                            console.error(e);
+                        }
                     }
-                } catch (e) {
-                    console.log(solutions);
-                    console.error(e);
+
+
+
+                } else {
+                    console.log("мы наткнулись на не пусторе решение");
                 }
-
-
-            } else {
-                console.log("мы наткнулись на не пусторе решение");
             }
+
         }
 
         console.log("Все сделано");
@@ -145,14 +157,14 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
 
 }
 
-const obfuscate = async (browser, finalTaskSolution) => {
+const obfuscate = async (browser) => {
     const page = await browser.newPage();
 
-    await page.goto("https://pyob.oxyry.com/", { waitUntil: "networkidle0"});
+    await page.goto("https://pyob.oxyry.com/", {
+        waitUntil: "networkidle0"
+    });
 
     await page.click('.CodeMirror-lines .CodeMirror-line');
-
-    await clipboardy.write(finalTaskSolution);
 
     await page.keyboard.down('Control')
 
@@ -164,22 +176,68 @@ const obfuscate = async (browser, finalTaskSolution) => {
 
     await page.keyboard.down('Control')
 
-    await page.keyboard.press('V')
+    await page.keyboard.press('v')
 
     await page.keyboard.up('Control')
 
     await page.click("#btn-obfuscate")
 
-    await page.click(".editors__dest .CodeMirror-lines .CodeMirror-line");
+    await page.waitFor(1000);
 
+    await page.click(".editors__dest .CodeMirror-lines .CodeMirror-line");
 
     await page.keyboard.down('Control')
 
     await page.keyboard.press('a')
 
-    await page.keyboard.press('c')
+    await page.keyboard.press('x')
 
     await page.keyboard.up('Control')
+
+    await page.close()
+
+}
+
+const formateCode = async (browser) => {
+    const page = await browser.newPage();
+
+    await page.goto("https://codebeautify.org/python-formatter-beautifier", {
+        waitUntil: "networkidle0"
+    });
+
+    await page.click("#inputDiv .ace_active-line");
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('a')
+
+    await page.keyboard.press('Backspace')
+
+    await page.keyboard.up('Control')
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('v')
+
+    await page.keyboard.up('Control')
+
+    await page.waitFor(1000)
+
+    await page.click("#defaultAction")
+
+    await page.waitFor(5000);
+
+    await page.click('#outputDiv .ace_active-line');
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('a')
+
+    await page.keyboard.press('x')
+
+    await page.keyboard.up('Control')
+
+    await page.waitFor(2000)
 
     await page.close()
 
@@ -191,7 +249,7 @@ const login = async (page, login, password) => {
     })
 
     await page.type("#passp-field-login", login, {
-        delay: 30
+        delay: 1
     });
 
     await page.click(".Button2_type_submit");
@@ -199,7 +257,7 @@ const login = async (page, login, password) => {
     await page.waitFor(3000);
 
     await page.type("#passp-field-passwd", password, {
-        delay: 30
+        delay: 1
     });
 
     await page.click(".Button2_type_submit");
