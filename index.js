@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer");
 const url = require('url');
+const reader = require('readline-sync');
 const fs = require("fs");
-const $ = require('cheerio');
 const clipboardy = require('clipboardy');
 
 
@@ -9,7 +9,6 @@ const start = async () => {
     console.log("если что не робит писать мне, не пытайтесь что-то починить сами");
 
     const browser = await puppeteer.launch({
-        executablePath: '/usr/bin/chromium-browser',
         headless: false
     });
 
@@ -19,19 +18,19 @@ const start = async () => {
         const page = await browser.newPage();
 
         if (!Object.keys(solutions).length) {
-            console.log("Hello начинаем копирования заданий на ваше устройство");
+            // console.log("Hello начинаем копирования заданий на ваше устройство");
 
-            await copySolutions(page);
+            // await copySolutions(page);
 
-            await page.close();
+            // await page.close();
 
-            await newPage();
+            // await newPage();
 
         } else {
 
-            await login(page, "Hronologos227", "cktdfujhs");
+            await login(page, reader.question("login: "), reader.question("password: ")); 
 
-            await pasteSolutionInAccount(page);
+            await pasteSolutionInAccount(page, solutions);
 
             await page.close();
         }
@@ -43,8 +42,11 @@ const start = async () => {
 }
 
 
-const pasteSolutionInAccount = async (page) => {
+const pasteSolutionInAccount = async (page, solutions) => {
+
     await page.waitForSelector('a.course-card');
+
+    console.log("вы залогинились");
 
     const links = await page.evaluate(() =>
         Array.from(
@@ -102,36 +104,30 @@ const pasteSolutionInAccount = async (page) => {
                     waitUntil: "networkidle0"
                 });
 
-                // const taskSolution = await page.evaluate(() => {
-                //     return document.querySelector('.CodeMirror-line > span')
-                // })
-
                 const taskName = await page.evaluate(() => {
                     return document.querySelector('h1').innerText
                 })
 
                 await page.click(".code-editor__control-button");
 
-
                 try {
                     console.log(taskName, solutions[taskName]);
+                    if (solutions[taskName]) {
+                        await clipboardy.write(solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, ''));
+
+                        await page.click('.CodeMirror-lines');
+
+                        await page.keyboard.down('Control')
+                        await page.keyboard.press('V')
+                        await page.keyboard.up('Control')
+
+                        await page.click(".layout__main .Button2_view_lyceum");
+                    }
                 } catch (e) {
-                    console.log(e);
+                    console.log(solutions);
+                    console.error(e);
                 }
 
-                try {
-                    await clipboardy.write(solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, ''));
-                } catch(e) {
-
-                }
-
-                await page.click('.CodeMirror-lines');
-
-                await page.keyboard.down('Control')
-                await page.keyboard.press('V')
-                await page.keyboard.up('Control')
-
-                await page.click(".layout__main .Button2_view_lyceum");
 
             } else {
                 console.log("мы наткнулись на не пусторе решение");
@@ -154,7 +150,7 @@ const login = async (page, login, password) => {
 
     await page.click(".Button2_type_submit");
 
-    await page.waitFor(1000);
+    await page.waitFor(3000);
 
     await page.type("#passp-field-passwd", password, {
         delay: 30
