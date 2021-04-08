@@ -30,7 +30,7 @@ const start = async () => {
 
             await login(page, reader.question("login: "), reader.question("password: ")); 
 
-            await pasteSolutionInAccount(page, solutions);
+            await pasteSolutionInAccount(page, solutions, browser);
 
             await page.close();
         }
@@ -42,7 +42,7 @@ const start = async () => {
 }
 
 
-const pasteSolutionInAccount = async (page, solutions) => {
+const pasteSolutionInAccount = async (page, solutions, browser) => {
 
     await page.waitForSelector('a.course-card');
 
@@ -83,7 +83,7 @@ const pasteSolutionInAccount = async (page, solutions) => {
 
         for (let i of taskLinks) {
             await page.goto(i, {
-                waitUntil: "networkidle2"
+                waitUntil: "networkidle0"
             });
 
             if (!page.url().includes("solutions")) {
@@ -113,12 +113,18 @@ const pasteSolutionInAccount = async (page, solutions) => {
                 try {
                     console.log(taskName, solutions[taskName]);
                     if (solutions[taskName]) {
-                        await clipboardy.write(solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, ''));
+                        let finalTaskSolution = solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, '')
+
+                        await obfuscate(browser, finalTaskSolution);
+
+                        // await clipboardy.write(finalTaskSolution);
 
                         await page.click('.CodeMirror-lines');
 
                         await page.keyboard.down('Control')
+
                         await page.keyboard.press('V')
+
                         await page.keyboard.up('Control')
 
                         await page.click(".layout__main .Button2_view_lyceum");
@@ -136,6 +142,46 @@ const pasteSolutionInAccount = async (page, solutions) => {
 
         console.log("Все сделано");
     }
+
+}
+
+const obfuscate = async (browser, finalTaskSolution) => {
+    const page = await browser.newPage();
+
+    await page.goto("https://pyob.oxyry.com/", { waitUntil: "networkidle0"});
+
+    await page.click('.CodeMirror-lines .CodeMirror-line');
+
+    await clipboardy.write(finalTaskSolution);
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('a')
+
+    await page.keyboard.press('Backspace')
+
+    await page.keyboard.up('Control')
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('V')
+
+    await page.keyboard.up('Control')
+
+    await page.click("#btn-obfuscate")
+
+    await page.click(".editors__dest .CodeMirror-lines .CodeMirror-line");
+
+
+    await page.keyboard.down('Control')
+
+    await page.keyboard.press('a')
+
+    await page.keyboard.press('c')
+
+    await page.keyboard.up('Control')
+
+    await page.close()
 
 }
 
