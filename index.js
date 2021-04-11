@@ -31,8 +31,7 @@ const start = async () => {
 
             // await formateCode(browser);
 
-            // await login(page, reader.question("login: "), reader.question("password: "));
-            await login(page, "Hronologos227", "cktdfujhs");
+            await login(page, reader.question("login: "), reader.question("password: "));
 
             await pasteSolutionInAccount(page, solutions, browser);
 
@@ -73,15 +72,6 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
             }
         )
     )
-
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
-    lessonLinks.shift(); 
 
     console.log("Ссылки на уроки", lessonLinks);
 
@@ -191,9 +181,7 @@ const appendSolution = async (page, solutions) => {
 
         await page.keyboard.up('Control');
 
-        await page.waitFor(10000);
-
-        // await page.click(".layout__main .Button2_view_lyceum");
+        await page.click(".layout__main .Button2_view_lyceum");
     } else {
         console.log("В бд не найдено такое решение");
     }
