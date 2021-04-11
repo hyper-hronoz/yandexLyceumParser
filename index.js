@@ -3,7 +3,8 @@ const url = require('url');
 const reader = require('readline-sync');
 const fs = require("fs");
 const clipboardy = require('clipboardy');
-
+const base64 = require('base-64');
+const utf8 = require('utf8');
 
 const start = async () => {
     console.log("если что не робит писать мне, не пытайтесь что-то починить сами");
@@ -30,7 +31,8 @@ const start = async () => {
 
             // await formateCode(browser);
 
-            await login(page, reader.question("login: "), reader.question("password: "));
+            // await login(page, reader.question("login: "), reader.question("password: "));
+            await login(page, "Hronologos227", "cktdfujhs");
 
             await pasteSolutionInAccount(page, solutions, browser);
 
@@ -58,6 +60,8 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
         )
     )
 
+    console.log("Ссылки на курсы: ", links);
+
     await page.goto(links[2], {
         waitUntil: "networkidle0"
     });
@@ -69,6 +73,17 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
             }
         )
     )
+
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+    lessonLinks.shift(); 
+
+    console.log("Ссылки на уроки", lessonLinks);
 
     for (let k of lessonLinks) {
         if (!k.includes("null")) {
@@ -84,7 +99,10 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
                 )
             )
 
+            console.log("Ссылки на задачи", taskLinks);
+
             for (let i of taskLinks) {
+                console.log(i);
                 await page.goto(i, {
                     waitUntil: "networkidle0"
                 });
@@ -108,94 +126,101 @@ const pasteSolutionInAccount = async (page, solutions, browser) => {
                             waitUntil: "networkidle0"
                         });
 
-                        const taskName = await page.evaluate(() => {
-                            return document.querySelector('h1').innerText
-                        })
-
-                        await page.click(".code-editor__control-button");
-
                         try {
-                            console.log(taskName, solutions[taskName]);
-                            if (solutions[taskName]) {
-                                let finalTaskSolution = solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, '')
-
-                                await clipboardy.write(finalTaskSolution);
-
-                                await obfuscate(browser);
-
-                                await formateCode(browser)
-
-                                await page.click('.CodeMirror-lines');
-
-                                await page.keyboard.down('Control')
-
-                                await page.keyboard.press('v')
-
-                                await page.keyboard.up('Control')
-
-                                await page.waitFor(3000)
-
-                                await page.click(".layout__main .Button2_view_lyceum");
-                            }
+                            await appendSolution(page, solutions);
                         } catch (e) {
-                            console.log(solutions);
                             console.error(e);
                         }
                     }
 
-
-
                 } else {
-                    console.log("мы наткнулись на не пусторе решение");
+                    try {
+                        const taskStatus = await page.evaluate(() => {
+                            return document.querySelector('.solution-status-viewer__status-text').innerText
+                        })
+
+                        if (taskStatus == "Доработать") {
+                            await appendSolution(page, solutions); 
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
                 }
             }
-
         }
-
-        console.log("Все сделано");
     }
+    console.log("Все сделано");
 
 }
 
-const obfuscate = async (browser) => {
-    const page = await browser.newPage();
+const appendSolution = async (page, solutions) => {
 
-    await page.goto("https://pyob.oxyry.com/", {
-        waitUntil: "networkidle0"
-    });
+    const taskName = await page.evaluate(() => {
+        return document.querySelector('h1').innerText
+    })
 
-    await page.click('.CodeMirror-lines .CodeMirror-line');
+    console.log(taskName);
 
-    await page.keyboard.down('Control')
+    if (solutions[taskName]) {
 
-    await page.keyboard.press('a')
+        console.log("Ща менять будем");
 
-    await page.keyboard.press('Backspace')
+        let finalTaskSolution = await solutions[taskName].replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-    await page.keyboard.up('Control')
+        console.log(finalTaskSolution);
 
-    await page.keyboard.down('Control')
+        finalTaskSolution = await obfuscate(finalTaskSolution);
 
-    await page.keyboard.press('v')
+        await clipboardy.write(finalTaskSolution);
 
-    await page.keyboard.up('Control')
+        await page.click(".code-editor__control-button");
 
-    await page.click("#btn-obfuscate")
+        await page.click('.CodeMirror-lines');
 
-    await page.waitFor(1000);
+        await page.keyboard.down('Control');
 
-    await page.click(".editors__dest .CodeMirror-lines .CodeMirror-line");
+        await page.keyboard.press('a');
 
-    await page.keyboard.down('Control')
+        await page.keyboard.press('Backspace');
 
-    await page.keyboard.press('a')
+        await page.keyboard.up('Control');
 
-    await page.keyboard.press('x')
+        await page.keyboard.down('Control');
 
-    await page.keyboard.up('Control')
+        await page.keyboard.press('v');
 
-    await page.close()
+        await page.keyboard.up('Control');
 
+        await page.waitFor(10000);
+
+        // await page.click(".layout__main .Button2_view_lyceum");
+    } else {
+        console.log("В бд не найдено такое решение");
+    }
+}
+
+const obfuscate = async (finalTaskSolution) => {
+    const bytes = utf8.encode(finalTaskSolution);
+    finalTaskSolution = base64.encode(bytes);
+    const array = finalTaskSolution.match(/.{1,50}/g);
+    let pythonString = '';
+    for (let i = 0; i < array.length; i++) {
+        if (!(i == 0)) {
+            pythonString += "         ";
+        }
+        pythonString += `b'${array[i]} '`
+        if (!(i == array.length - 1)) {
+            pythonString += "\\\n"
+        }
+    }
+    console.log(pythonString);
+    return `
+from base64 import b64encode, b64decode
+
+hidden = ${pythonString}
+
+eval(compile(b64decode(hidden.decode()), "<string>", "exec"))
+    `;
 }
 
 const formateCode = async (browser) => {
@@ -221,25 +246,21 @@ const formateCode = async (browser) => {
 
     await page.keyboard.up('Control')
 
-    await page.waitFor(1000)
-
     await page.click("#defaultAction")
 
-    await page.waitFor(5000);
+    await page.waitFor(2000);
 
     await page.click('#outputDiv .ace_active-line');
 
-    await page.keyboard.down('Control')
+    await page.keyboard.down('Control');
 
-    await page.keyboard.press('a')
+    await page.keyboard.press('a');
 
-    await page.keyboard.press('x')
+    await page.keyboard.press('x');
 
-    await page.keyboard.up('Control')
+    await page.keyboard.up('Control');
 
-    await page.waitFor(2000)
-
-    await page.close()
+    await page.close();
 
 }
 
@@ -254,7 +275,7 @@ const login = async (page, login, password) => {
 
     await page.click(".Button2_type_submit");
 
-    await page.waitFor(3000);
+    await page.waitFor(400);
 
     await page.type("#passp-field-passwd", password, {
         delay: 1
